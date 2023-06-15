@@ -1,0 +1,360 @@
+---
+title: "ATIVIDADE 1 - Analisando Dados de Ações com o R"
+author: "Belmiro N. Joao"
+date: "2023-05-25"
+output:
+  html_document: default
+  pdf_document: default
+---
+Para um primeiro contato ver: 
+https://conteudos.xpi.com.br/aprenda-a-investir/relatorios/o-que-e-analise-tecnica/
+Há um breve vídeo sobre o surgimento da Análise Técnica
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+*A Atividade deve ser Salva em qualquer formato: .html, .pdf ou .docx.*
+
+*Foi criado, no Teams, um link para a inserção da Atividade em Formulário do Microsoft Forms.*
+
+Você estando no Teams já está logado para abrir o Formulário.
+Caso não consiga abrí-lo verifique se está com o login da PUC/SP para o ambiente 365.
+
+![texto](https://s.yimg.com/ny/api/res/1.2/JLKwkuBQ5pNLbWRQHMTdOQ--/YXBwaWQ9aGlnaGxhbmRlcjt3PTY0MDtoPTQ0NQ--/https://media-mbst-pub-ue1.s3.amazonaws.com/creatr-uploaded-images/2019-09/85b65900-da36-11e9-afee-b73dcfe119a8)
+
+
+```{r, echo=TRUE}
+# install.packages('quantmod') # somente na primeira vez 
+library(quantmod)
+```
+
+Para vários elementos dê uma olhada no quantmod
+
+```{r echo=TRUE}
+#?quantmod # Help auxiliar para Modelagem em Finanças Quantitativas - Caso haja necessidade 
+```
+
+Usaremos o Yahoo aqui, mas o Google Finance também é suportado. A sintaxe é ligeiramente diferente. (https://finance.yahoo.com/lookup/)
+
+Chamaremos vários símbolos de uma só vez, criando um vetor de símbolos
+e, em seguida, passe a cesta para a função getSymbols
+
+
+```{r  , echo=TRUE}
+
+# AAPL (Apple) AMZN (Amazon) BRK-R (Berkshire Hathaway) SPY (SPDR S&P 500 ETF Trust)
+symbolBasket <- c('AAPL', 'AMZN', 'BRK-B', 'SPY')
+getSymbols(symbolBasket , src='yahoo')
+```
+*IMPORTANTE*
+Este código foi desenvolvido para trabalhar unicamente com a BRK-R (Berkshire Hathaway)
+
+A Berkshire Hathaway é uma companhia sediada em Omaha, no Nebraska, nos Estados Unidos, que supervisiona e gere um conjunto de empresas subsidiárias. 
+A empresa tem um crescimento médio de 20,3% aos seus acionistas, nos últimos 44 anos, enquanto empregam muitos funcionários e tem uma dívida mínima. 
+Seu CEO é o lendário Warren Buffett
+
+*Se desejar mudar a ação a ser analisada veja observações no final deste código tomando cuidado na substituição de BRK-R e de BRKB pelo ticker da ação a ser analisada.*
+
+*********************************************************
+
+O Summary nos mostrará o básico; note que temos que usar '' para caracteres não alfabuméricos.
+```{r , include=TRUE}
+#summary(`AAPL`)
+
+summary(`BRK-B`)
+```
+### Preparação de dados - CLEANUP é interminável
+NOTA: BRK-B É ESTRANHO, então não podemos fugir da preparação de dados ;-)
+'renomear' o objeto BRK-B para BRKB, não realmente renomear, mas em essência. 
+Em seguida, altere os nomes de 'names' no novo objeto BRKB
+
+
+``` {r , echo=TRUE}
+BRKB <- as.xts(`BRK-B`)
+names(BRKB)
+```
+
+``` {r , echo=TRUE}
+names(BRKB) <- c("BRKB.Open"   ,  "BRKB.High"   ,  "BRKB.Low"   ,   "BRKB.Close"  ,  "BRKB.Volume",  "BRKB.Adjusted")
+names(BRKB)
+```
+### Os gráficos começam aqui
+
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7}
+plot(BRKB$BRKB.Open)
+```
+Para ver um pouco alguma variação sobre isso, podemos usar este código;
+
+
+ 
+```{r , echo=TRUE, fig.width=10, fig.height=7}
+lineChart(BRKB$BRKB.Open, line.type = 'h', theme = 'white', TA = NULL)
+```
+Para ver volumes;
+remover o TA
+
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7 }
+lineChart(BRKB, line.type = 'h', theme = 'white')
+```
+Gráfico de barras, tipo permite alta, baixa, fechar ;) 
+
+Barchart, type allows for high, low, close ;) 
+
+```{r , echo=TRUE, fig.width=10, fig.height=7 }
+barChart(BRKB, bar.type = 'hlc',  TA = NULL)
+```
+Agora apenas um subconjunto e em candle sticks (castiçais)
+
+
+```{r echo=TRUE, fig.width=10, fig.height=7}
+candleChart(BRKB, TA=NULL, subset = '2023')
+```
+Dê uma olhada no candleChart para recursos;
+
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7 }
+
+#?candleChart # Help dos Gráficos Financeiros - caso haja necessidade
+
+```
+
+## Início (Não executável): 
+getSymbols("YHOO")
+chartSeries(YHOO)
+chartSeries(YHOO, subset='last 4 months')
+chartSeries(YHOO, subset='2007::2008-01')
+chartSeries(YHOO,theme=chartTheme('white'))
+chartSeries(YHOO,TA=NULL)   #no volume
+chartSeries(YHOO,TA=c(addVo(),addBBands()))  #add volume and Bollinger Bands from TTR
+
+
+#NOTA há uma tonelada de add... itens que são muito lisos
+
+addMACD()   # adicionar indicador MACD ao gráfico atual
+
+setTA()
+chartSeries(YHOO)   #faça o gráfico novamente, desta vez todos os indicadores estarão presentes
+## Fim (Não executável)
+
+
+Adicionar MACD 
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7 }
+candleChart(BRKB, TA=c(addMACD(),addVo()), subset = '2023')
+```
+
+?addMACD
+```{r , echo=TRUE, fig.width=10, fig.height=7}
+#?addMACD()  # Help - Caso haja necessidade
+```
+
+addMACD(fast = 12, slow = 26, signal = 9, type = "EMA", histogram = TRUE, col)
+Várias maneiras de ditar o tempo, neste caso tudo depois...
+Também adicionado no ADX
+
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7 }
+candleChart(BRKB, TA=c(addMACD(),addADX()), subset = '2023-01::')
+```
+Várias maneiras de ditar o tempo, neste caso, tudo no meio...
+O fundo é o 'Tema', no nosso caso, branco para melhor visualização.
+
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7 }
+candleChart(BRKB , TA=c(addMACD()), subset = '2022-12::2023-03', theme = 'white')
+```
+Várias opções para o tema geral
+
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7 }
+candleChart(BRKB , TA=c(addMACD()), subset = '2023-01::', theme = chartTheme('white', up.col='green',dn.col='darkred'))
+```
+chartSeries é outra maneira legal de fazer essas mesmas coisas
+
+
+```{r , echo=TRUE }
+#?chartSeries # Help - caso haja necessidade  
+```
+
+```{r , echo=TRUE, fig.width=10, fig.height=7}
+chartSeries(BRKB, 
+            type = c("auto", "candlesticks"), 
+            subset = '2023-01::',
+            show.grid = TRUE,
+            major.ticks='auto', minor.ticks=TRUE,
+            TA=c(addMACD(),addVo()))
+```
+Os gráficos de velas (Candlestick) se originaram no Japão há mais de 100 anos antes do Ocidente desenvolver os gráficos de barras e pontos e figuras. Em 1700, um japonês chamado Homma descobriu que, embora houvesse uma ligação entre o preço e a oferta e demanda de arroz, os mercados eram fortemente influenciados pelas emoções dos comerciantes.
+Os castiçais mostram essa emoção representando visualmente o tamanho dos movimentos de preço com cores diferentes. Os traders usam os candlesticks para tomar decisões de negociação com base em padrões que ocorrem regularmente que ajudam a prever a direção de curto prazo do preço.
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7}
+chartSeries(BRKB, 
+            type = c("auto", "candlesticks"), 
+            subset = '2018-01::',
+            show.grid = TRUE,
+            major.ticks='auto', minor.ticks=TRUE,
+            multi.col = TRUE,
+            TA=c(addMACD(),addVo()))
+```
+
+```{r , echo=TRUE, fig.width=10, fig.height=7}
+chartSeries(BRKB, 
+            type = c("candlesticks"), 
+            subset = '2023-01::',
+            show.grid = TRUE,
+            major.ticks='auto', minor.ticks=TRUE,
+            multi.col = TRUE,
+            TA=c(addMACD(),addVo()))
+```
+
+
+### A adição de indicadores começa aqui - embora tenhamos saltado à frente acima
+
+Usaremos o TTR, que é instalado com o quantmod, se não, você pode instalar o TTR, Regras Técnicas de Negociação - Technical Trading Rules.
+Este pacote contém muitas das funções de análise técnica mais populares, bem como funções para recuperar símbolos de ações dos EUA e dados do Yahoo Finance.Entre as funções populares, no TTR, temos: ADX (Welles Wilder’s Directional Movement Index), BBands, changes, MovingAverages, MACD (MACD Oscillator), RSI (Relative Strength Index), runFun, stoch, VWAP, WebData
+
+Boa diversão!
+
+
+
+```{r , echo=TRUE }
+#?TTR # Technical Tradind Rules - caso haja necessidade
+```
+
+Vamos fazer uma Média Móvel Simples
+
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7}
+chartSeries(BRKB, 
+            type = c("auto", "matchsticks"), 
+            subset = '2022-09::',
+            show.grid = TRUE,
+            major.ticks='auto', minor.ticks=TRUE,
+            multi.col = FALSE,
+            TA=c(addMACD(),addVo(),addSMA(n=200,col = 'blue'),addSMA(n=50,col = 'red'),addSMA(n=22,col = 'green'),
+            addROC(n=200,col = 'blue'),addROC(n=50,col = 'red'),addROC(n=22,col = 'green'))) # rate of change
+```
+
+Bandas de Bollinger
+Básico;
+
+As bandas Bollinger são ferramentas de análise técnica criadas por John Bollinger no início dos anos 80. Este indicador possui uma forte relação com a volatilidade, possibilitando, assim, a sua comparação com os níveis de preços num determinado período de tempo. O maior objetivo das bandas Bollinger é fornecer uma idéia relativa de alto e baixo. Por definição, os preços são altos na linha (banda) superior e baixos na linha (banda) inferior.
+
+
+addBBands(n = 20, sd = 2, maType = "SMA", draw = 'bands', on = -1)
+
+``` {r , echo=TRUE }
+#?addBBands # Bandas Bollinger - caso haja necessidade
+```
+
+BBands experimentais "A principal adição a esta chamada de função sobre a versão TTR está no argumento draw. ' bands' desenharão Bandas de Bollinger padrão, 'porcentagem' desenhará Bollinger %b e 'largura' desenhará Largura de Bandas de Bolinger. Os dois últimos serão sorteados em novas regiões de figuras."
+
+
+``` {r  , echo=TRUE}
+#?add_BBands - - caso haja necessidade
+```
+O indicador CCI ou Índice do canal de commodities, é um indicador clássico de análise técnica elaborado em década de 80 do seculo passado por Donald Lambert. Apesar de seu nome, o indicador mostra bons resultados de análise não apenas nos mercados de commodities, mas também ao operar com outros instrumentos financeiros.
+
+``` {r , echo=TRUE, fig.width=10, fig.height=7 }
+chartSeries(BRKB, theme="white",
+ TA="addVo();addBBands();addCCI()", subset = '2022-09::') 
+```
+
+
+``` {r , echo=TRUE, fig.width=10, fig.height=7 }
+chartSeries(BRKB, theme="white",
+ TA="addVo();addBBands();addCCI()", subset = '2023-01::')
+```
+### Criar um indicador personalizado 
+Comece com um gráfico simples. 
+
+
+``` {r , echo=TRUE, fig.width=10, fig.height=7 }
+chartSeries(BRKB, theme=chartTheme('white'), up.col="black",
+ dn.col="black")
+```
+
+CRIE dois vetores como uma série temporal para fazer uma Média Móvel Exponencial. 
+EMA é como um SMA, exceto que dá mais peso à atividade recente e 
+isso significa que ele tende a imitar o mercado um pouco melhor. 
+
+Médias móveis exponenciais BRKB
+
+CREATE two vectors as a time series to make a Exponential Moving Average. 
+EMA is like a SMA except it gives more weight to the recent activity and 
+that means it tends to mimic the market a little better. 
+
+BRKB exponential moving averages
+
+MACD - MACD (Moving Average Convergence Divergence) é a sigla para Média Móvel Convergente e Divergente, um dos indicadores mais utilizados por traders.
+a MACD é fundamental para detectar, rapidamente, fortes tendências de curto prazo. Sua função principal é monitorar tendências e indicar possíveis sinais de mudança, confirmação ou reversão.
+
+O índice direcional médio (ADX - Average Direcional Index) é um indicador de análise técnica usado por alguns traders para determinar a força de uma tendência.
+É uma ferramenta da análise técnica que trabalha com polaridades negativas e positivas. Também conhecido por índice de movimento direcional. Seu objetivo é determinar a força de tendência e as sinalizações das movimentações futuras dos preços.
+
+Uma média móvel simples (SMA Simple Moving Average) calcula a média de um intervalo selecionado de preços, geralmente preços de fechamento, pelo número de períodos nesse intervalo.
+
+A Taxa de Variação de Preço (ROC - Price Rate of Change) é um indicador técnico baseado em momentum que mede a variação percentual no preço entre o preço atual e o preço de um certo número de períodos atrás. O indicador ROC é plotado contra zero, com o indicador se movendo para cima em território positivo se as mudanças de preços forem para o lado positivo e movendo-se para o território negativo se as mudanças de preços forem para o lado negativo.
+
+
+Uma média móvel exponencial (EMA - Exponential Moving Average) é um tipo de média móvel (MA) que coloca um maior peso e significado nos pontos de dados mais recentes. A média móvel exponencial também é referida como a média móvel exponencialmente ponderada. Uma média móvel exponencialmente ponderada reage mais significativamente às recentes mudanças de preços do que uma média móvel simples (SMA), que aplica um peso igual a todas as observações no período.
+
+
+```{r , echo=TRUE, fig.width=10, fig.height=7}
+
+BRKB.EMA.20<- EMA(BRKB$BRKB.Close, n=20)
+BRKB.EMA.50<- EMA(BRKB$BRKB.Close, n=50)
+BRKB.EMA.100<- EMA(BRKB$BRKB.Close, n=100)
+BRKB.EMA.200<- EMA(BRKB$BRKB.Close, n=200)
+
+chartSeries(BRKB, theme=chartTheme('white'),
+            type = c("auto", "matchsticks"), 
+            subset = '2022-01::',
+            show.grid = TRUE,
+            major.ticks='auto', minor.ticks=TRUE,
+            multi.col = FALSE,
+            TA=c(addMACD(),addVo(),addADX(n = 14, maType = "EMA")))
+
+            addTA(BRKB.EMA.20, on=1, col = "green")
+            addTA(BRKB.EMA.50, on=1, col = "blue")
+            addTA(BRKB.EMA.100, on=1, col = "yellow")
+            addTA(BRKB.EMA.200, on=1, col = "red")
+            addTA(BRKB.EMA.20 - BRKB.EMA.200, col = "black",
+                  type = 'h', legend = "100-200 EMA")
+```
+
+### Fim da Atividade 1 
+
+```{r}
+
+```
+
+## Observações
+
+##Nasdaq## 
+Para as ações listadas na Nasdaq em:
+https://www.nasdaq.com/market-activity/stocks/screener
+Você pode fazer um Download, em .csv, das ações que compõem o índice.
+
+##NYSE e outras##
+Usando o filtro (à esquerda) em: https://www.nasdaq.com/market-activity/stocks/screener 
+Você pode obter as ações listadas, por exemplo, na NYSE (Bolsa de Nova Iorque) ou por setor (Technologu, por exemplo) ou por recomendações de Analistas de Mercado, por exemplo, "Strong Buy" e mesmo por países. 
+Para o Brasil códigos negociados nos EUA (ADRs): AZUL, BAK (Braskem), BBD (Bradesco), ERJ (Embraer), ITUB (Itaú), PRB (Petrobrás), VALE (Vale) etc.
+
+
+```{r}
+sessionInfo()
+```
+
